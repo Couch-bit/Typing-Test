@@ -1,9 +1,98 @@
+from operator import index
 from os import listdir
 from sys import exit
 from Src.typingwindow import TypingWindow
 from tkinter import *
 from tkinter import ttk
 from ttkthemes import ThemedStyle
+
+
+# Negates the value of display_time.
+def set_time(event) -> None:
+
+    # Gets the necessary global variable.
+    global Display_time
+
+    # Negates the value of the bool.
+    Display_time.set(not Display_time.get())
+
+
+# Negates the value of display_precision.
+def set_precision(event) -> None:
+
+    # Gets the necessary global variable.
+    global Display_precision
+
+    # Inverses the value of the bool.
+    Display_precision.set(not Display_precision.get())
+
+
+# Negates the value of display_chars_per_minute.
+def set_chars_per_minute(event) -> None:
+
+    # Gets the necessary global variable.
+    global Display_chars_per_minute
+
+    # Inverses the value of the bool.
+    Display_chars_per_minute.set(not Display_chars_per_minute.get())
+
+
+# Negates the value of display_words_per_minute.
+def set_words_per_minute(event) -> None:
+
+    # Gets the necessary global variable.
+    global Display_words_per_minute
+
+    # Inverses the value of the bool.
+    Display_words_per_minute.set(not Display_words_per_minute.get())
+
+
+# Negates the value of display_final_graph.
+def set_final_graph(event) -> None:
+
+    # Gets the necessary global variable.
+    global Display_final_graph
+
+    # Inverses the value of the bool.
+    Display_final_graph.set(not Display_final_graph.get())
+
+
+# Sets the dropdown menu value to the one above the current one 
+#   (if it's the first one it does nothing).
+def text_up(event) -> None:
+
+    # Gets the necessary global variable.
+    global Text_source, List_of_texts, Dropdown_text
+
+    # Defines a variable containing the index of the currently selected text
+    #   (Defines it with the value -1 if list is empty)
+    try:
+        index_of_text = List_of_texts.index(Text_source.get())
+    except IndexError:
+        index_of_text = -1
+    # Make the function only change the value of tkinter variable if there is an element to switch it to.
+    if (len(List_of_texts) > 0 and index_of_text > 0):
+        Text_source.set(List_of_texts[index_of_text - 1])
+
+
+# Sets the dropdown menu value to the one below the current one 
+#   (if it's the last one it does nothing).
+def text_down(event) -> None:
+
+    # Gets the necessary global variable.
+    global Text_source, List_of_texts, Dropdown_text
+
+    # Defines a variable containing the length of the text list.
+    length_of_list = len(List_of_texts)
+    # Defines a variable containing the index of the currently selected text
+    #   (Defines it with the value -1 if list is empty)
+    try:
+        index_of_text = List_of_texts.index(Text_source.get())
+    except IndexError:
+        index_of_text = -1
+    # Make the function only change the value of tkinter variable if there is an element to switch it to.
+    if (length_of_list > 0 and index_of_text < length_of_list - 1):
+        Text_source.set(List_of_texts[index_of_text + 1])
 
 
 # Starts the typing test if it's not already running.
@@ -106,7 +195,12 @@ if __name__ == '__main__':
                                             variable=Display_chars_per_minute)
     Show_words_per_minute = ttk.Checkbutton(Main_frame, text='Show Words Per Minute', variable=Display_words_per_minute)
     Show_final_graph = ttk.Checkbutton(Main_frame, text='Show Final Graph', variable=Display_final_graph)
-    Dropdown_text = ttk.OptionMenu(Main_frame, Text_source, *List_of_texts)
+    # Sets the default value of the dropdown to the name of the first .txt file in Texts folder or to "No Text in Folder" if no files were found. 
+    try:
+        default = List_of_texts[0]
+    except IndexError:
+        default = 'No text in folder'
+    Dropdown_text = ttk.OptionMenu(Main_frame, Text_source, default, *List_of_texts)
 
     # Defines the prompts for different situations.
     Prompt_no_text = ttk.Label(Main_frame, text='No text chosen')
@@ -124,6 +218,15 @@ if __name__ == '__main__':
     # Binds escape to terminate the application and enter to start the test.
     Options.bind('<Escape>', close)
     Options.bind('<Return>', start)
+
+    # Binds keyboard shortcuts to operate the options menu.
+    Options.bind('t', set_time)
+    Options.bind('p', set_precision)
+    Options.bind('c', set_chars_per_minute)
+    Options.bind('w', set_words_per_minute)
+    Options.bind('f', set_final_graph)
+    Options.bind('<Up>', text_up)
+    Options.bind('<Down>', text_down)
 
     # Makes sure ending the process is handled correctly when the user closes the window by another means.
     Options.protocol('WM_DELETE_WINDOW', close)

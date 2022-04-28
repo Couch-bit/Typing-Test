@@ -123,9 +123,10 @@ class TypingWindow(Tk):
         self.Total_letters = {}
         self.Graph_values = {}
 
-        # Defines attributes that indicate whether the typing speed test is active.
+        # Defines attributes that indicate whether the typing speed test/summary is active.
         self.running = False
         self.terminate = False
+        self.displaying_summary = False
 
         # Defines attributes that indicate current position in the text.
         self.current_word = ''
@@ -152,19 +153,6 @@ class TypingWindow(Tk):
         self.Typing_frame.grid(row=0, column=0, padx=10)
         if self.display_stats:
             self.Stats_frame.grid(row=0, column=1, padx=10)
-
-        # Defines widgets to be placed in Typing_frame.
-        self.Text_label = Text(self.Typing_frame, wrap=WORD, font=self.Text_font, bg='black', fg='white')
-        self.Entry_word = ttk.Entry(self.Typing_frame, font=self.Text_font)
-
-        # Defines tags for the text.
-        self.Text_label.tag_configure('CURRENT', font=self.Current_font)
-        self.Text_label.tag_configure('CORRECT', foreground='green')
-        self.Text_label.tag_configure('INCORRECT', foreground='red')
-
-        # Inserts typing widgets into Typing_frame.
-        self.Text_label.grid(row=0, column=0)
-        self.Entry_word.grid(row=1, column=0, pady=20)
 
         # Defines attributes used for calculating stats.
         self.timer_0 = 0
@@ -200,12 +188,11 @@ class TypingWindow(Tk):
         if self.display_stats:
             self._show_stat_widgets()
         
-        # Defines figure and the subplot used for displaying the graph, along with the widget containing the figure.
+        # Defines placeholders that will be used for displaying the graph.
         # Got code help from https://www.pythontutorial.net/tkinter/tkinter-matplotlib/.
-        self.Figure = Figure(figsize=(10, 4), dpi=100)
-        # The Graph only exists during summary.
+        self.Figure = None
         self.Graph = None
-        self.Canvas = FigureCanvasTkAgg(self.Figure, master=self)
+        self.Canvas = None
 
     # "PUBLIC" METHODS
 
@@ -216,6 +203,7 @@ class TypingWindow(Tk):
         Starts the typing test and displays it for the user. 
         The method is reusable and blocks running of the subsequent code until the test is finished
             (though it cannot run multiple times simultaneously on the same object).
+        The text is going to be "There should be somehing here" if the file is empty.
         Raises FileNotFoundError if something has gone wrong while getting the text from file.
         The user can:
         - type word into the entry widget and press space to submit it and go on to the next word;
@@ -227,10 +215,14 @@ class TypingWindow(Tk):
         - close the summary by pressing escape or any other means.
         """
 
-        # Loads text and sets the current word to the first one.
-        self._get_text()
-        self.current_word = self.Text_to_type[self.current_word_index]
-
+        # Loads text and sets the current word to the first one 
+        #   (the first one in the default sentence if file is empty).
+        self._get_text() 
+        try:
+            self.current_word = self.Text_to_type[self.current_word_index]
+        except IndexError:
+            self.Text_to_type = ['There', 'should', 'be', 'something', 'here']
+            self.current_word = self.Text_to_type[0]
         # Shows typing window to user.
         self._show_typing_window()
 
@@ -247,10 +239,14 @@ class TypingWindow(Tk):
             # Sleep method of time class is used to not put too much workload on the processor.
             sleep(self.update_delay)
 
-        # Sets display_final_graph to False if there no letters in the dictionaries.
-        if len(dict(filter(lambda item: item[1] > 0, self.Correct_letters.items()))) < 1:
+        # Defines a local bool that tells the program whether the graph should be stopped from getting displayed. 
+        there_is_no_data_for_graph = len(dict(filter(lambda item: item[1] > 0, self.Correct_letters.items()))) < 1 and \
+        self.display_final_graph
+
+        # "Sets display_final_graph to False" if there no letters in the dictionaries.
+        if there_is_no_data_for_graph:
             self.display_final_graph = False
-            self.display_summary = self.display_summary and (self.display_stats or self.display_final_graph)
+            self.display_summary = self.display_summary and self.display_stats
 
         # Displays summary if typing test was "meant to end".
         if self.display_summary:
@@ -259,6 +255,10 @@ class TypingWindow(Tk):
         # Gets rid of window.
         self.withdraw()
 
+        # Corrects the display_final_graph bool.
+        if there_is_no_data_for_graph:
+            self.display_final_graph = True
+            self.display_summary = self.display_summary and self.display_stats
         # Resets attributes to default values.
         self._reset_test()
 
@@ -322,6 +322,19 @@ class TypingWindow(Tk):
             self.minsize(850, 700)
             self.maxsize(850, 700)
         
+        # Defines widgets to be placed in Typing_frame.
+        self.Text_label = Text(self.Typing_frame, wrap=WORD, font=self.Text_font, bg='black', fg='white')
+        self.Entry_word = ttk.Entry(self.Typing_frame, font=self.Text_font)
+
+        # Defines tags for the text.
+        self.Text_label.tag_configure('CURRENT', font=self.Current_font)
+        self.Text_label.tag_configure('CORRECT', foreground='green')
+        self.Text_label.tag_configure('INCORRECT', foreground='red')
+
+        # Inserts typing widgets into Typing_frame.
+        self.Text_label.grid(row=0, column=0)
+        self.Entry_word.grid(row=1, column=0, pady=20)
+
         # Inserts the text into text widget.
         self.Text_label.insert(END, ''.join([i + ' ' for i in self.Text_to_type]))
         self.Text_label.config(state=DISABLED)
@@ -463,7 +476,6 @@ class TypingWindow(Tk):
     # Handles situations when the window is closed/typing test ends without reaching the end of the text.
     def _force_stop(self, event=None) -> None:
         
-        print(event)
         # Sets runnning attribute to False.
         self.running = False
         # Sets terminate attribute to True.
@@ -479,6 +491,9 @@ class TypingWindow(Tk):
 
         # Stops displaying Typing_frame for the summary.
         self.Typing_frame.grid_forget()
+
+        # Set the bool indicating whether the summary is currently being displayed to True.
+        self.displaying_summary = True
 
         # Adjusts the size of the window.
         if self.display_stats and self.display_final_graph:
@@ -503,7 +518,9 @@ class TypingWindow(Tk):
             self.Graph_values = dict(sorted(self.Graph_values.items(), key=lambda item: item[0]))
 
             # Adds The Graph to the window.
+            self.Figure = Figure(figsize=(10, 4), dpi=100)
             self.Graph = self.Figure.add_subplot(111)
+            self.Canvas = FigureCanvasTkAgg(self.Figure, master=self)
             self.Graph.set_title('Precision By Character')
             self.Graph.bar(self.Graph_values.keys(), self.Graph_values.values(), color=['blue', 'orange'])
             self.Canvas.get_tk_widget().grid(row=1, column=1)
@@ -513,18 +530,23 @@ class TypingWindow(Tk):
         self.protocol('WM_DELETE_WINDOW', self._close_summary)
 
         # Blocks the program in place until user closes summary.
-        self.mainloop()
+        while self.displaying_summary:
+            self.update()
+            sleep(self.update_delay)
 
     # Closes summary
     def _close_summary(self, event=None) -> None:
 
-        # Gets rid of the canvas in the window and overrides graph with None. 
-        self.Canvas.get_tk_widget().grid_forget()
-        self.Graph = None
+        # Overrides objects used for displaying the graph with None. 
+        if self.Canvas is not None:
+            self.Canvas.get_tk_widget().grid_forget()
+            self.Canvas = None
+            self.Figure = None
+            self.Graph = None
         # Puts the frame back in the window.
         self.Typing_frame.grid(row=0, column=0)
-        # Exits mainloop.
-        self.quit()
+        # Exits mainloop substitute.
+        self.displaying_summary = False
 
     # POST-CORRECTION METHODS
 
@@ -533,14 +555,27 @@ class TypingWindow(Tk):
 
         self.Correct_letters = {}
         self.Total_letters = {}
+        self.Graph_values = {}
 
-        self.running = True
-
-        self.current_word = ''
         self.current_word_index = 0
         self.current_index = 0
+
+        self.terminate = False
+
+        self.timer_0 = 0
+        self.timer_current = 0
+        self.precision = 0.00
+        self.correct_char_sum = 0
+        self.total_char_sum = 0
+        self.word_sum = 0
+        self.chars_per_minute = 0.00
+        self.words_per_minute = 0.00
 
         self.Time_value.set('0:00')
         self.Precision_value.set('0 %')
         self.Chars_per_minute_value.set('0.00')
         self.Words_per_minute_value.set('0.00')
+
+        self.Typing_frame.grid(row=0, column=0, padx=10)
+
+        self.display_summary = self.display_stats or self.display_final_graph
