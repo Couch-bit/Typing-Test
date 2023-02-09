@@ -4,7 +4,7 @@ This is a typing test that first displays an options menu which lets the user ch
 
 Necessary modules:
 
-- matplotlib (pip install matplotlib);
+- matplotlib (pip install matplotlib).
 
 Options menu behavior:
 
