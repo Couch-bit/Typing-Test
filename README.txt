@@ -1,11 +1,10 @@
 Description:
 
-This is a typing test that first displays an options menu which lets the user choose the text and stats to display. The app is written in Python 3.10.
+This is a typing test that first displays an options menu which lets the user choose the text and stats to display. The app is written in Python 3.11.
 
 Necessary modules:
 
 - matplotlib (pip install matplotlib);
-- ttkthemes (pip install ttkthemes).
 
 Options menu behavior:
 
@@ -25,7 +24,7 @@ Typing test behavior:
 	("There should be something here")
 - User can type as soon as the window opens;
 - Timer starts along with the first keypress;
-- The current word is displayed in bold, while correctly typed letters are displayed in green and incorrect ones in red;
+- The current word is underlined, while correctly typed letters are displayed in green and incorrect ones in red;
 - User can submit the word by pressing spacebar;
 - If the user chose to display stats they are displayed on the right side of the window;
 - User can press left ctrl to end test prematurely while still displaying the summary;
